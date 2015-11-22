@@ -18,6 +18,20 @@ classdef ArmKinematics
             obj.l2 = l2;
         end
         
+	% forward kinematic equations are
+	% xe = l1*c1 + l2*c2
+	% ye = l1*s1 - l2*s2
+	% Jacobian is
+	% 1 / l1*l2*sin(th1 + th2) times
+	% | -l2*c2  l2*s2  |
+	% | -l1*c1  -l1*s1 |
+	% singularity configurations: th2 = -th1 (lots of them) - arm stretched out with
+	function res = getJointVelocities(obj, th1, th2, vx, vy)
+	    %TODO singularity check
+	    invJ = [-obj.l2*cos(th2), obj.l2*sin(th2); -obj.l1*cos(th1), -obj.l1*sin(th1)]; %prepare inverse Jacobian
+    	invJ = invJ./(obj.l1*obj.l2*sin(th1 + th2)); %division by det(J)
+	    res = invJ*[vx; vy];
+	end
         % method to check if a point x,y is in the workspace of the arm
         function isIn = inWorkspace(obj, x, y)
             % we can't go past L1 + L2 and don't need to retract to
