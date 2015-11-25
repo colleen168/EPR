@@ -9,6 +9,8 @@ classdef ArmKinematics
         % lengths of the first link (l1) and the second (l2) in mm
         l1
         l2
+        minRadius
+        minDepth
     end
     
     methods
@@ -16,6 +18,8 @@ classdef ArmKinematics
             % initialize the object with the link lengths
             obj.l1 = l1;
             obj.l2 = l2;
+            obj.minRadius = l1/4; % TODO seems reasonable. test
+            obj.minDepth = 0; % TODO find out how deep should we go
         end
         
         % forward kinematic equations are
@@ -35,19 +39,24 @@ classdef ArmKinematics
         end
         % method to check if a point x,y is in the workspace of the arm
         function isIn = inWorkspace(obj, x, y)
+            isIn = 1;
             % we can't go past L1 + L2 and don't need to retract to
             % negative
             if (x < 0 || x > obj.l1 + obj.l2)
-                isIn = false;
-            else
-                % restrict theta1 for 0-pi/2 for now - TODO debatable
-                % then if we allow theta2 to be negative y varies in
-                % following region
-                if (y < 0 || y > obj.l1 + obj.l2)
-                    isIn = false;
-                else
-                    isIn = true;
-                end
+                isIn = 0;
+                return;
+            end
+            % similarly, y varies in following region. but we allow 
+            % it to drop into negative values
+            if (y < obj.minDepth || y > obj.l1 + obj.l2)
+                isIn = 0;
+                return; 
+            end
+            % reasonable assumption: we don't come close to (0,0)
+            r = sqrt(x^2 + y^2);
+            if r < obj.minRadius
+                isIn = 0;
+                return;
             end
         end
         
@@ -56,10 +65,9 @@ classdef ArmKinematics
         % elements: [theta1, theta2] where theta1 is for the first servo,
         % etc.
         function res = wrongTheta1(obj, th1)
-            % FIXME ex: move from (0,420) to (210,210) straight
-            % can't do that than - straight line is below the circle =>
-            % theta1 should go into pi/2 + smth and thats prohibited
-            if th1 >= 0 && th1 <= pi/2
+            % link1 can rotate in second quadrant - other way arm is not
+            % manipulable enough
+            if th1 >= 0 && th1 < pi
                 res = 0;
             else
                 % something is definitely wrong
@@ -79,7 +87,20 @@ classdef ArmKinematics
             end 
         end
         % TODO tilt angle check
-        function [theta1, theta2, res] = findThetas(obj, x, y)
+        function [theta1, theta2, tilt, res] = findThetas(obj, x, y)
+            % FIXME scoop length should be accomodated
+            % or coordinate of scoop root are fed in?
+            res = 0;
+            % TODO for now don't bother with scoop orientation
+            tilt = 0;
+            theta1 = pi/2;
+            theta2 = 0;
+            if ~obj.inWorkspace(x,y)
+                display('E-Kin: not in workspace');
+                display(x); display(y);
+                res = -1;
+                return;
+            end
             r = sqrt(x^2 + y^2);
             alpha = atan2(y,x);
             beta = acos((obj.l1^2 + r^2 - obj.l2^2)/(2*r*obj.l1));
@@ -87,8 +108,6 @@ classdef ArmKinematics
             theta2 = atan2(obj.l1*sin(theta1) - y, x - obj.l1*cos(theta1));
             if wrongTheta1(obj, theta1) || wrongTheta2(obj, theta2)
                 res = -1;
-            else
-                res = 0;
             end
         end
         function [x,y] = findPosition(obj, th1, th2)
