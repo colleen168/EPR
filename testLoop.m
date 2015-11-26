@@ -24,7 +24,7 @@ while 1
         break;
     end
     ac = ArmConfiguration(th1, th2, phi);
-    res = d.setArmPosition(ac);
+    res = d.setArmConfig(ac);
     if res < 0
         display('ERROR: motor command error');
         continue;

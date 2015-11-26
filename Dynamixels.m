@@ -38,6 +38,8 @@ classdef Dynamixels
         BottomRightMotorId = 1;
         BottomLeftMotorId = 3;
         TiltMotorId = 4;
+        % 1unit = 0.114rpm = 0.0019 1/s for rotational speed
+        Wunit = 0.0019;
     end
     methods (Static)
         function res = wasSuccess()
@@ -141,6 +143,17 @@ classdef Dynamixels
             % write it
             calllib('dynamixel','dxl_write_word', Id, P_GOAL_POSITION, Pos);
         end
+        function res = setGoalSpeed(Id, speed)
+            res = 0;
+            units = speed / Dynamixels.Wunit;
+            if units > 600 % constrain the speed to safe 1 rps
+                display('E-Speed: value too large');
+                res = -1;
+                return;
+            end
+            P_GOAL_SPEED = 32;
+            calllib('dynamixel','dxl_write_word', Id, P_GOAL_SPEED, units);
+        end
         function pos = getCurrentPosition(Id)
             % this is the Register on the Servo that corresponds to the current pos
             P_CURRENT_POSITION = 36;
@@ -149,7 +162,7 @@ classdef Dynamixels
         end
         function angle = getCurrentAngle(Id)
             pos = Dynamixels.getCurrentPosition(Id);
-            angle = Dynamixels.angleFromPosition(pos);
+            angle = Dynamixels.angleFromPosition(Id, pos);
         end
         function res = isMoving(Id)
             % determine if motor is moving right now
@@ -167,8 +180,24 @@ classdef Dynamixels
             end
             res = 0;
         end
-        function res = setArmPosition(ac)
-            [t1, t2, tilt] = ac.getConfig();
+        function res = setArmConfig(ac)
+            [t1, t2, tilt, w1, w2] = ac.getConfig();
+            % set the speeds
+            %display(w1);
+            %display(w2);
+            res = Dynamixels.setGoalSpeed(Dynamixels.BottomRightMotorId, w1);
+            if res < 0 || ~Dynamixels.wasSuccess()
+                display('E-Dyn: bottom right motor speed failure');
+                res = -1;
+                return;
+            end
+            res = Dynamixels.setGoalSpeed(Dynamixels.BottomLeftMotorId, w2);
+            if res < 0 || ~Dynamixels.wasSuccess()
+                display('E-Dyn: bottom left motor speed failure');
+                res = -1;
+                return;
+            end
+            % and then positions
             res = Dynamixels.setGoalAngle(Dynamixels.BottomRightMotorId, t1);
             if res < 0 || ~Dynamixels.wasSuccess()
                 display('E-Dyn: bottom right motor failure');
@@ -181,13 +210,20 @@ classdef Dynamixels
                 res = -1;
                 return;
             end
-            Dynamixels.setGoalAngle(Dynamixels.TiltMotorId, tilt);
-            if res < 0 || ~Dynamixels.wasSuccess()
-                display('E-Dyn: tilt motor failure');
-                res = -1;
-                return;
-            end
+        
+%             Dynamixels.setGoalAngle(Dynamixels.TiltMotorId, tilt);
+%             if res < 0 || ~Dynamixels.wasSuccess()
+%                 display('E-Dyn: tilt motor failure');
+%                 res = -1;
+%                 return;
+%             end
             res = 0;
+        end
+        function ac = getArmConfig()
+            th1 = Dynamixels.getCurrentAngle(Dynamixels.BottomRightMotorId);
+            th2 = Dynamixels.getCurrentAngle(Dynamixels.BottomLeftMotorId);
+            phi = 0; % Dynamixels.getCurrentAngle(Dynamixels.TiltMotorId);
+            ac = ArmConfiguration(th1, th2, phi);
         end
         function disconnect()
             calllib('dynamixel','dxl_terminate');
