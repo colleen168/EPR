@@ -106,7 +106,8 @@ classdef ArmKinematics
             beta = acos((obj.l1^2 + r^2 - obj.l2^2)/(2*r*obj.l1));
             theta1 = beta + alpha;
             theta2 = atan2(obj.l1*sin(theta1) - y, x - obj.l1*cos(theta1));
-            if wrongTheta1(obj, theta1) || wrongTheta2(obj, theta2)
+            tilt = theta2; %for the scoop to remain horizontal, the tilt angle must be theta2
+            if wrongTheta1(obj, theta1) || wrongTheta2(obj, theta2) || wrongPhi(obj, tilt)
                 res = -1;
             end
         end
