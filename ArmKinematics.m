@@ -19,7 +19,7 @@ classdef ArmKinematics
             obj.l1 = l1;
             obj.l2 = l2;
             obj.minRadius = l1/4; % TODO seems reasonable. test
-            obj.minDepth = 0; % TODO find out how deep should we go
+            obj.minDepth = -1; % TODO find out how deep should we go
         end
         
         % forward kinematic equations are

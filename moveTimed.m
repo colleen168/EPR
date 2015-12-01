@@ -1,21 +1,13 @@
-function res = moveToStraight(ak, d, xd, yd)
-res = 0;
-% straight segment
-% read current motor positions, calculate current x-y
+function res = moveTimed(ak, d, xd, yd)
 ac = d.getArmConfig();
 th1Current = ac.theta1;
 th2Current = ac.theta2;
 [xCur, yCur] = ak.findPosition(th1Current, th2Current);
 % calculate angles for desired position
-if ~ak.inWorkspace(xd, yd)
-    res = -1;
-    display('E-Kin: not in workspace');
-    return;
-end
 % TODO it's a good way to store all speed constants in one place
-V = 50; % 5 cm/s is perfectly normal speed for linear movement
-step = 10;
-dt = step/V;
+V = 5; % 5 cm/s is perfectly normal speed for linear movement
+dt = 0.2;
+step = V*dt;
 phi = atan2(yd - yCur, xd - xCur); % direction of speed vector
 vx = V*cos(phi);
 vy = V*sin(phi);
@@ -33,16 +25,10 @@ for i = 1:1:N+1
     y(i) = yCur + direction(2)*(i-1)/N;
 end
 tic
-for i = 1:1:N+1
-    %while Dynamixels.areMoving()
-    %end
-    res = moveXY(Dynamixels.getArmConfig(), ak, x(i), y(i), vx, vy);
-    if res < 0
-        display('E-Kin: cant proceed with straight movement');
-        break;
-    end
+t = timer;
+t.TimerFcn = {@moveXYTimer, Dynamixels.getArmConfig(), ak, x, y, vx, vy};
+t.Period = dt;
+t.TasksToExecute = N;
+t.ExecutionMode = 'fixedRate';
+start(t)
 end
-toc
-display('Done');
-end
-
