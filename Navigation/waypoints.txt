@@ -1,0 +1,19 @@
+MoveToMtSimmons
+command_X = [-0.15]
+command_Y = [1.3]
+command_Phi = [70]
+
+MoveToDumpDebris
+command_X = [-0.15]
+command_Y = [1.3]
+command_Phi = [90]
+
+MoveToTree
+command_X = [-0.30,.-0.50,-0.70,-1.2]
+command_Y = [0.90,0.35,0.08,0.08]
+command_Phi = [135,135,90,90]
+
+MoveToRoof
+command_X = [-1.7,-1.8,-1.7,-1.55,-1.55]
+command_Y = [0.08,0.35,0.65,0.85,1.25]
+command_Phi = [90,30,-30,0,0]
