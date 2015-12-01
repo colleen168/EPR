@@ -87,6 +87,16 @@ classdef ArmKinematics
             end 
         end
         % TODO tilt angle check
+        function res = wrongPhi(obj, phi)
+            if phi >= -pi()/3 && phi <= pi()/3 %allow scoop to rotate enough to scoop and dump snow
+                res = 0;
+            else
+                %something is wrong - the scoop is rotating too far
+                display('E-Kin: check scoop kinematics');
+                disp(phi)
+                res = 1;
+            end
+        end
         function [theta1, theta2, tilt, res] = findThetas(obj, x, y)
             % FIXME scoop length should be accomodated
             % or coordinate of scoop root are fed in?
